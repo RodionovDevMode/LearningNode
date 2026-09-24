@@ -3,7 +3,7 @@
 🇷🇺 [Русская версия](#ru) | 🇬🇧 [English version](#en)
 
 ---
-<a id="ru"></a>
+<a id="#ru"></a>
 # 🇷🇺 Русская версия
 
 ## О проекте
@@ -24,7 +24,7 @@
 
 ### Endpoints
 
-```text
+text
 GET     /users
 GET     /users/:id
 POST    /users
@@ -245,7 +245,7 @@ Infrastructure
 Итоговая цель — развитие в направлении Fullstack / Software Engineering.
 --------------------------------------------------------------------------------
 
-<a id="en"></a>
+<a id="#en"></a>
 🇬🇧 English version
 
 About
