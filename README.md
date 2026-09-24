@@ -1,9 +1,9 @@
 # Learning Node.js
 
-🇷🇺 [Русская версия](#-русская-версия) | 🇬🇧 [English version](#-english-version)
+🇷🇺 [Русская версия](#ru) | 🇬🇧 [English version](#en)
 
 ---
-
+<a id="ru"></a>
 # 🇷🇺 Русская версия
 
 ## О проекте
@@ -245,7 +245,7 @@ Infrastructure
 Итоговая цель — развитие в направлении Fullstack / Software Engineering.
 --------------------------------------------------------------------------------
 
-
+<a id="en"></a>
 🇬🇧 English version
 
 About
