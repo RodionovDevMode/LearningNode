@@ -3,7 +3,7 @@
 🇷🇺 [Русская версия](#ru) | 🇬🇧 [English version](#en)
 
 ---
-<a id="#ru"></a>
+<a id="ru"></a>
 # 🇷🇺 Русская версия
 
 ## О проекте
@@ -245,7 +245,7 @@ Infrastructure
 Итоговая цель — развитие в направлении Fullstack / Software Engineering.
 --------------------------------------------------------------------------------
 
-<a id="#en"></a>
+<a id="en"></a>
 🇬🇧 English version
 
 About
@@ -481,5 +481,3 @@ how they are built and deployed to production
 
 The long-term goal is to grow towards Fullstack / Software Engineering.
 
-
-```
