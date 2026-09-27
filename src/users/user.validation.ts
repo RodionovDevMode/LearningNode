@@ -1,4 +1,3 @@
-import { userInfo } from 'node:os'
 import type { CreateUserData, UpdateUserData } from './user.types.js'
 
 export const isCreateUserData = (data: unknown): data is CreateUserData => {
@@ -7,19 +6,36 @@ export const isCreateUserData = (data: unknown): data is CreateUserData => {
 	}
 	const user = data as Record<string, unknown>
 
-	if (typeof user.name !== 'string') {
-		return false
-	}
-	if (typeof user.age !== 'number') {
-		return false
-	}
-	if (typeof user.email !== 'string') {
-		return false
-	}
-	if (typeof user.city !== 'string') {
-		return false
-	}
-	return true
+	const isValidName =
+		typeof user.name === 'string' && user.name.trim().length > 0
+
+	const isValidAge =
+		typeof user.age === 'number' &&
+		Number.isInteger(user.age) &&
+		user.age > 0 &&
+		user.age <= 100
+
+	const isValidEmail =
+		typeof user.email === 'string' &&
+		user.email.trim().length > 0 &&
+		user.email.includes('@')
+
+	const isValidCity =
+		typeof user.city === 'string' && user.city.trim().length > 0
+
+	const hasAtLeastOneField =
+		user.name !== undefined ||
+		user.age !== undefined ||
+		user.email !== undefined ||
+		user.city !== undefined
+
+	return (
+		hasAtLeastOneField &&
+		isValidName &&
+		isValidAge &&
+		isValidEmail &&
+		isValidCity
+	)
 }
 
 export const isUpdateUserData = (data: unknown): data is UpdateUserData => {
@@ -29,17 +45,38 @@ export const isUpdateUserData = (data: unknown): data is UpdateUserData => {
 
 	const user = data as Record<string, unknown>
 
-	if (user.name !== undefined && typeof user.name !== 'string') {
-		return false
-	}
-	if (user.age !== undefined && typeof user.age !== 'number') {
-		return false
-	}
-	if (user.email !== undefined && typeof user.email !== 'number') {
-		return false
-	}
-	if (user.city !== undefined && typeof user.city !== 'string') {
-		return false
-	}
-	return true
+	const isValidName =
+		user.name === undefined ||
+		(typeof user.name === 'string' && user.name.trim().length > 0)
+
+	const isValidAge =
+		user.age === undefined ||
+		(typeof user.age === 'number' &&
+			Number.isInteger(user.age) &&
+			user.age > 0 &&
+			user.age <= 100)
+
+	const isValidEmail =
+		user.email === undefined ||
+		(typeof user.email === 'string' &&
+			user.email.trim().length > 0 &&
+			user.email.includes('@'))
+
+	const isValidCity =
+		user.city === undefined ||
+		(typeof user.city === 'string' && user.city.trim().length > 0)
+
+	const hasAtLeastOneField =
+		user.name !== undefined ||
+		user.age !== undefined ||
+		user.email !== undefined ||
+		user.city !== undefined
+
+	return (
+		hasAtLeastOneField &&
+		isValidName &&
+		isValidAge &&
+		isValidEmail &&
+		isValidCity
+	)
 }
