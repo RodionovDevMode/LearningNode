@@ -1,5 +1,5 @@
-import type { User, CreateUserData, UpdateUserData } from './users.js'
-import { users } from './users.js'
+import type { CreateUserData, UpdateUserData, User } from './user.types.js'
+import { users } from './user.data.js'
 
 export const getUserById = (id: number): User | undefined => {
 	const user = users.find(user => user.id === id)

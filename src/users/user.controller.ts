@@ -1,12 +1,13 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { users, type CreateUserData, type UpdateUserData } from './users.js'
-import { readRequestBody } from './request.utils.js'
+import { readRequestBody } from '../shared/http/request.utils.js'
 import {
 	createUser,
 	deleteUser,
 	getUserById,
 	updateUser,
 } from './user.service.js'
+import { users } from './user.data.js'
+import type { CreateUserData, UpdateUserData } from './user.types.js'
 
 export const getUsersController = (
 	_req: IncomingMessage,

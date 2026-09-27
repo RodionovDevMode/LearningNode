@@ -6,7 +6,7 @@ import {
 	getUserByIdController,
 	getUsersController,
 	updateUserController,
-} from './user.controller.js'
+} from './users/user.controller.js'
 
 export const server = http.createServer((req, res) => {
 	if (req.method === 'GET' && req.url === '/users') {
