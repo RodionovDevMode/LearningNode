@@ -32,6 +32,8 @@ export const server = http.createServer((req, res) => {
 	res.statusCode = 404
 	res.end('Not Found')
 })
-server.listen(3000, () => {
-	console.log('Сервер успешно запущен на localhost:3000')
+const port = Number(process.env.PORT) || 3000
+
+server.listen(port, () => {
+	console.log(`Сервер успешно запущен на localhost:${port}`)
 })
