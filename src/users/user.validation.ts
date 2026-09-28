@@ -1,0 +1,82 @@
+import type { CreateUserData, UpdateUserData } from './user.types.js'
+
+export const isCreateUserData = (data: unknown): data is CreateUserData => {
+	if (typeof data !== 'object' || data === null) {
+		return false
+	}
+	const user = data as Record<string, unknown>
+
+	const isValidName =
+		typeof user.name === 'string' && user.name.trim().length > 0
+
+	const isValidAge =
+		typeof user.age === 'number' &&
+		Number.isInteger(user.age) &&
+		user.age > 0 &&
+		user.age <= 100
+
+	const isValidEmail =
+		typeof user.email === 'string' &&
+		user.email.trim().length > 0 &&
+		user.email.includes('@')
+
+	const isValidCity =
+		typeof user.city === 'string' && user.city.trim().length > 0
+
+	const hasAtLeastOneField =
+		user.name !== undefined ||
+		user.age !== undefined ||
+		user.email !== undefined ||
+		user.city !== undefined
+
+	return (
+		hasAtLeastOneField &&
+		isValidName &&
+		isValidAge &&
+		isValidEmail &&
+		isValidCity
+	)
+}
+
+export const isUpdateUserData = (data: unknown): data is UpdateUserData => {
+	if (typeof data !== 'object' || data === null) {
+		return false
+	}
+
+	const user = data as Record<string, unknown>
+
+	const isValidName =
+		user.name === undefined ||
+		(typeof user.name === 'string' && user.name.trim().length > 0)
+
+	const isValidAge =
+		user.age === undefined ||
+		(typeof user.age === 'number' &&
+			Number.isInteger(user.age) &&
+			user.age > 0 &&
+			user.age <= 100)
+
+	const isValidEmail =
+		user.email === undefined ||
+		(typeof user.email === 'string' &&
+			user.email.trim().length > 0 &&
+			user.email.includes('@'))
+
+	const isValidCity =
+		user.city === undefined ||
+		(typeof user.city === 'string' && user.city.trim().length > 0)
+
+	const hasAtLeastOneField =
+		user.name !== undefined ||
+		user.age !== undefined ||
+		user.email !== undefined ||
+		user.city !== undefined
+
+	return (
+		hasAtLeastOneField &&
+		isValidName &&
+		isValidAge &&
+		isValidEmail &&
+		isValidCity
+	)
+}

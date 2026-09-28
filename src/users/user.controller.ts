@@ -1,12 +1,13 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { users, type CreateUserData, type UpdateUserData } from './users.js'
-import { readRequestBody } from './request.utils.js'
+import { readRequestBody } from '../shared/http/request.utils.js'
+import { users } from './user.data.js'
 import {
 	createUser,
 	deleteUser,
 	getUserById,
 	updateUser,
 } from './user.service.js'
+import { isCreateUserData, isUpdateUserData } from './user.validation.js'
 
 export const getUsersController = (
 	_req: IncomingMessage,
@@ -46,7 +47,12 @@ export const createUserController = async (
 ) => {
 	try {
 		const body = await readRequestBody(req)
-		const data: CreateUserData = JSON.parse(body)
+		const data: unknown = JSON.parse(body)
+		if (!isCreateUserData(data)) {
+			res.statusCode = 400
+			res.end('Invalid user data')
+			return
+		}
 		const newUser = createUser(data)
 		res.statusCode = 201
 		res.setHeader('Content-Type', 'application/json')
@@ -69,7 +75,12 @@ export const updateUserController = async (
 	}
 	try {
 		const body = await readRequestBody(req)
-		const data: UpdateUserData = JSON.parse(body)
+		const data: unknown = JSON.parse(body)
+		if (!isUpdateUserData(data)) {
+			res.statusCode = 400
+			res.end('Invalid user data')
+			return
+		}
 		const updatedUser = updateUser(id, data)
 
 		if (!updatedUser) {
