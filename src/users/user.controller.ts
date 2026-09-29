@@ -57,9 +57,15 @@ export const createUserController = async (
 		res.statusCode = 201
 		res.setHeader('Content-Type', 'application/json')
 		res.end(JSON.stringify(newUser))
-	} catch {
-		res.statusCode = 400
-		res.end('Invalid JSON')
+	} catch (error) {
+		if (error instanceof SyntaxError) {
+			res.statusCode = 400
+			res.end('Invalid JSON')
+			return
+		}
+		console.error(error)
+		res.statusCode = 500
+		res.end('Internal Server Error')
 	}
 }
 
@@ -92,9 +98,15 @@ export const updateUserController = async (
 		res.statusCode = 200
 		res.setHeader('Content-Type', 'application/json')
 		res.end(JSON.stringify(updatedUser))
-	} catch {
-		res.statusCode = 400
-		res.end('Invalid JSON')
+	} catch (error) {
+		if (error instanceof SyntaxError) {
+			res.statusCode = 400
+			res.end('Invalid JSON')
+			return
+		}
+		console.error(error)
+		res.statusCode = 500
+		res.end('Internal Server Error')
 	}
 	return
 }
