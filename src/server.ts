@@ -9,23 +9,31 @@ import {
 } from './users/user.controller.js'
 
 export const server = http.createServer((req, res) => {
-	if (req.method === 'GET' && req.url === '/users') {
+	const url = new URL(
+		req.url ?? '/',
+		`http://${req.headers.host ?? 'localhost'}`,
+	)
+
+	const pathParts = url.pathname.split('/').filter(Boolean)
+	const isUserByIdRoute = pathParts.length === 2 && pathParts[0] === 'users'
+
+	if (req.method === 'GET' && url.pathname === '/users') {
 		getUsersController(req, res)
 		return
 	}
-	if (req.method === 'GET' && req.url?.startsWith('/users/')) {
+	if (req.method === 'GET' && isUserByIdRoute) {
 		getUserByIdController(req, res)
 		return
 	}
-	if (req.method === 'POST' && req.url === '/users') {
+	if (req.method === 'POST' && url.pathname === '/users') {
 		createUserController(req, res)
 		return
 	}
-	if (req.method === 'PATCH' && req.url?.startsWith('/users/')) {
+	if (req.method === 'PATCH' && isUserByIdRoute) {
 		updateUserController(req, res)
 		return
 	}
-	if (req.method === 'DELETE' && req.url?.startsWith('/users/')) {
+	if (req.method === 'DELETE' && isUserByIdRoute) {
 		deleteUserController(req, res)
 		return
 	}
