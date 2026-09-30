@@ -1,10 +1,10 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { readRequestBody } from '../shared/http/request.utils.js'
-import { users } from './user.data.js'
 import {
 	createUser,
 	deleteUser,
 	getUserById,
+	getUsers,
 	updateUser,
 } from './user.service.js'
 import { isCreateUserData, isUpdateUserData } from './user.validation.js'
@@ -34,32 +34,6 @@ export const getUsersController = (
 		return
 	}
 
-	const filteredUsers = city ? users.filter(user => user.city === city) : users
-	const normalizedSearch = search?.trim().toLowerCase()
-	const searchedUsers = search
-		? filteredUsers.filter(user =>
-				user.name.toLowerCase().includes(search.trim().toLowerCase()),
-			)
-		: filteredUsers
-
-	const sortedUsers = [...searchedUsers]
-
-	if (sort === 'name') {
-		sortedUsers.sort((a, b) => {
-			return a.name.localeCompare(b.name)
-		})
-	}
-
-	if (sort === 'age') {
-		sortedUsers.sort((a, b) => {
-			return a.age - b.age
-		})
-	}
-
-	if (sort && order === 'desc') {
-		sortedUsers.reverse()
-	}
-
 	const page = pageParam === null ? 1 : Number(pageParam)
 	const limit = limitParam === null ? 10 : Number(limitParam)
 
@@ -73,28 +47,18 @@ export const getUsersController = (
 		res.end('Invalid pagination params')
 		return
 	}
-
-	const total = searchedUsers.length
-	const totalPages = Math.ceil(total / limit)
-
-	const startIndex = (page - 1) * limit
-	const endIndex = startIndex + limit
-
-	const paginatedUsers = sortedUsers.slice(startIndex, endIndex)
+	const result = getUsers({
+		city,
+		search,
+		sort,
+		order,
+		page,
+		limit,
+	})
 
 	res.statusCode = 200
 	res.setHeader('Content-Type', 'application/json')
-	res.end(
-		JSON.stringify({
-			data: paginatedUsers,
-			pagination: {
-				page,
-				limit,
-				total,
-				totalPages,
-			},
-		}),
-	)
+	res.end(JSON.stringify(result))
 }
 
 export const getUserByIdController = (
