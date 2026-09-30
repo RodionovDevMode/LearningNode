@@ -1,4 +1,10 @@
-import type { CreateUserData, UpdateUserData, User } from './user.types.js'
+import type {
+	CreateUserData,
+	UpdateUserData,
+	User,
+	GetUsersParams,
+	GetUsersResult,
+} from './user.types.js'
 import { users } from './user.data.js'
 
 export const getUserById = (id: number): User | undefined => {
@@ -51,4 +57,55 @@ export const deleteUser = (id: number): User | undefined => {
 	}
 	const deletedUsers = users.splice(userIndex, 1)
 	return deletedUsers[0]
+}
+
+export const getUsers = ({
+	city,
+	search,
+	sort,
+	order,
+	page,
+	limit,
+}: GetUsersParams): GetUsersResult => {
+	const filteredUsers = city ? users.filter(user => user.city === city) : users
+
+	const normalizedSearch = search === null ? null : search.trim().toLowerCase()
+
+	const searchedUsers = normalizedSearch
+		? filteredUsers.filter(user =>
+				user.name.toLowerCase().includes(normalizedSearch),
+			)
+		: filteredUsers
+
+	const sortedUsers = [...searchedUsers]
+
+	if (sort === 'name') {
+		sortedUsers.sort((a, b) => a.name.localeCompare(b.name))
+	}
+
+	if (sort === 'age') {
+		sortedUsers.sort((a, b) => a.age - b.age)
+	}
+
+	if (sort && order === 'desc') {
+		sortedUsers.reverse()
+	}
+
+	const total = searchedUsers.length
+	const totalPages = Math.ceil(total / limit)
+
+	const startIndex = (page - 1) * limit
+	const endIndex = startIndex + limit
+
+	const paginatedUsers = sortedUsers.slice(startIndex, endIndex)
+
+	return {
+		data: paginatedUsers,
+		pagination: {
+			page,
+			limit,
+			total,
+			totalPages,
+		},
+	}
 }
