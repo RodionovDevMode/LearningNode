@@ -12,6 +12,7 @@ import {
 	isUpdateUserData,
 } from './validation/user.validation.js'
 import { parseGetUsersQuery } from './validation/user.query.js'
+import { sendError, sendJson } from '../shared/http/response.utils.js'
 
 export const getUsersController = (
 	req: IncomingMessage,
@@ -21,15 +22,12 @@ export const getUsersController = (
 	const parsedQuery = parseGetUsersQuery(url.searchParams)
 
 	if (!parsedQuery.success) {
-		res.statusCode = 400
-		res.end(parsedQuery.error)
+		sendError(res, 400, parsedQuery.error)
 		return
 	}
 	const result = getUsers(parsedQuery.data)
 
-	res.statusCode = 200
-	res.setHeader('Content-Type', 'application/json')
-	res.end(JSON.stringify(result))
+	sendJson(res, 200, result)
 }
 
 export const getUserByIdController = (
@@ -40,20 +38,16 @@ export const getUserByIdController = (
 	const id = Number(url.pathname.split('/')[2])
 
 	if (!Number.isInteger(id) || id <= 0) {
-		res.statusCode = 400
-		res.end('Invalid user id')
+		sendError(res, 400, 'Invalid user id')
 		return
 	}
 
 	const user = getUserById(id)
 	if (!user) {
-		res.statusCode = 404
-		res.end('User not found')
+		sendError(res, 404, 'User not found')
 		return
 	}
-	res.statusCode = 200
-	res.setHeader('Content-Type', 'application/json')
-	res.end(JSON.stringify(user))
+	sendJson(res, 200, user)
 	return
 }
 
@@ -66,25 +60,19 @@ export const createUserController = async (
 		const data: unknown = JSON.parse(body)
 
 		if (!isCreateUserData(data)) {
-			res.statusCode = 400
-			res.end('Invalid user data')
+			sendError(res, 400, 'Invalid user data')
 			return
 		}
 		const newUser = createUser(data)
 
-		res.statusCode = 201
-		res.setHeader('Content-Type', 'application/json')
-		res.end(JSON.stringify(newUser))
+		sendJson(res, 201, newUser)
 	} catch (error) {
 		if (error instanceof SyntaxError) {
-			res.statusCode = 400
-			res.end('Invalid JSON')
+			sendError(res, 400, 'Invalid JSON')
 			return
 		}
-
 		console.error(error)
-		res.statusCode = 500
-		res.end('Internal Server Error')
+		sendError(res, 500, 'Internal Server Error')
 	}
 }
 
@@ -96,8 +84,7 @@ export const updateUserController = async (
 	const id = Number(url.pathname.split('/')[2])
 
 	if (!Number.isInteger(id) || id <= 0) {
-		res.statusCode = 400
-		res.end('Invalid user id')
+		sendError(res, 400, 'Invalid user id')
 		return
 	}
 
@@ -106,32 +93,26 @@ export const updateUserController = async (
 		const data: unknown = JSON.parse(body)
 
 		if (!isUpdateUserData(data)) {
-			res.statusCode = 400
-			res.end('Invalid user data')
+			sendError(res, 400, 'Invalid user data')
 			return
 		}
 
 		const updatedUser = updateUser(id, data)
 
 		if (!updatedUser) {
-			res.statusCode = 404
-			res.end('User not found')
+			sendError(res, 404, 'User not found')
 			return
 		}
 
-		res.statusCode = 200
-		res.setHeader('Content-Type', 'application/json')
-		res.end(JSON.stringify(updatedUser))
+		sendJson(res, 200, updatedUser)
 	} catch (error) {
 		if (error instanceof SyntaxError) {
-			res.statusCode = 400
-			res.end('Invalid JSON')
+			sendError(res, 400, 'Invalid JSON')
 			return
 		}
 
 		console.error(error)
-		res.statusCode = 500
-		res.end('Internal Server Error')
+		sendError(res, 500, 'Internal Server Error')
 	}
 	return
 }
@@ -144,8 +125,7 @@ export const deleteUserController = (
 	const id = Number(url.pathname.split('/')[2])
 
 	if (!Number.isInteger(id) || id <= 0) {
-		res.statusCode = 400
-		res.end('Invalid ID')
+		sendError(res, 400, 'Invalid id')
 
 		return
 	}
@@ -153,13 +133,10 @@ export const deleteUserController = (
 	const deleted = deleteUser(id)
 
 	if (!deleted) {
-		res.statusCode = 404
-		res.end('User not found')
+		sendError(res, 404, 'User not found')
 		return
 	}
 
-	res.statusCode = 200
-	res.setHeader('Content-Type', 'application/json')
-	res.end(JSON.stringify(deleted))
+	sendJson(res, 200, deleted)
 	return
 }
