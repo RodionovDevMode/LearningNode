@@ -7,54 +7,25 @@ import {
 	getUsers,
 	updateUser,
 } from './user.service.js'
-import { isCreateUserData, isUpdateUserData } from './user.validation.js'
+import {
+	isCreateUserData,
+	isUpdateUserData,
+} from './validation/user.validation.js'
+import { parseGetUsersQuery } from './validation/user.query.js'
 
 export const getUsersController = (
 	req: IncomingMessage,
 	res: ServerResponse,
 ) => {
 	const url = new URL(req.url ?? '/', `http://${req.headers.host}`)
+	const parsedQuery = parseGetUsersQuery(url.searchParams)
 
-	const city = url.searchParams.get('city')
-	const pageParam = url.searchParams.get('page')
-	const limitParam = url.searchParams.get('limit')
-	const sort = url.searchParams.get('sort')
-	const order = url.searchParams.get('order') ?? 'asc'
-	const search = url.searchParams.get('search')
-
-	if (sort !== null && sort !== 'name' && sort !== 'age') {
+	if (!parsedQuery.success) {
 		res.statusCode = 400
-		res.end('Invalid sort param')
+		res.end(parsedQuery.error)
 		return
 	}
-
-	if (order !== 'asc' && order !== 'desc') {
-		res.statusCode = 400
-		res.end('Invalid order param')
-		return
-	}
-
-	const page = pageParam === null ? 1 : Number(pageParam)
-	const limit = limitParam === null ? 10 : Number(limitParam)
-
-	if (
-		!Number.isInteger(page) ||
-		!Number.isInteger(limit) ||
-		page <= 0 ||
-		limit <= 0
-	) {
-		res.statusCode = 400
-		res.end('Invalid pagination params')
-		return
-	}
-	const result = getUsers({
-		city,
-		search,
-		sort,
-		order,
-		page,
-		limit,
-	})
+	const result = getUsers(parsedQuery.data)
 
 	res.statusCode = 200
 	res.setHeader('Content-Type', 'application/json')
