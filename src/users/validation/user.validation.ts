@@ -1,4 +1,4 @@
-import type { CreateUserData, UpdateUserData } from './user.types.js'
+import type { CreateUserData, UpdateUserData } from '../user.types.js'
 
 export const isCreateUserData = (data: unknown): data is CreateUserData => {
 	if (typeof data !== 'object' || data === null) {

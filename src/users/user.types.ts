@@ -41,3 +41,7 @@ export type GetUsersResult = {
 		totalPages: number
 	}
 }
+
+export type GetUsersQueryResult =
+	| { success: true; data: GetUsersParams }
+	| { success: false; error: string }
