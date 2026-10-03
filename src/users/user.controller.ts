@@ -15,7 +15,7 @@ import { parseGetUsersQuery } from './validation/user.query.js'
 import { sendError, sendJson } from '../shared/http/response.utils.js'
 import { HttpError } from '../shared/errors/http-error.js'
 
-export const getUsersController = (
+export const getUsersController = async (
 	req: IncomingMessage,
 	res: ServerResponse,
 ) => {
@@ -26,7 +26,7 @@ export const getUsersController = (
 		sendError(res, 400, parsedQuery.error)
 		return
 	}
-	const result = getUsers(parsedQuery.data)
+	const result = await getUsers(parsedQuery.data)
 
 	sendJson(res, 200, result)
 }
