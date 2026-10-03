@@ -56,7 +56,6 @@ export const createUserController = async (
 	req: IncomingMessage,
 	res: ServerResponse,
 ) => {
-	throw new Error('Test unexpected error')
 	const body = await readRequestBody(req)
 
 	let data: unknown
