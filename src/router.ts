@@ -21,7 +21,7 @@ export const router = async (req: IncomingMessage, res: ServerResponse) => {
 		const isUserByIdRoute = pathParts.length === 2 && pathParts[0] === 'users'
 
 		if (req.method === 'GET' && url.pathname === '/users') {
-			getUsersController(req, res)
+			await getUsersController(req, res)
 			return
 		}
 

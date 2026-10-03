@@ -6,6 +6,7 @@ import type {
 	GetUsersResult,
 } from './user.types.js'
 import { users } from './user.data.js'
+import { getUsersFromDb } from './user.repository.js'
 
 export const getUserById = (id: number): User | undefined => {
 	const user = users.find(user => user.id === id)
@@ -59,15 +60,18 @@ export const deleteUser = (id: number): User | undefined => {
 	return deletedUsers[0]
 }
 
-export const getUsers = ({
+export const getUsers = async ({
 	city,
 	search,
 	sort,
 	order,
 	page,
 	limit,
-}: GetUsersParams): GetUsersResult => {
-	const filteredUsers = city ? users.filter(user => user.city === city) : users
+}: GetUsersParams): Promise<GetUsersResult> => {
+	const dbUsers = await getUsersFromDb()
+	const filteredUsers = city
+		? dbUsers.filter(user => user.city === city)
+		: dbUsers
 
 	const normalizedSearch = search === null ? null : search.trim().toLowerCase()
 
