@@ -9,39 +9,43 @@ import {
 } from './users/user.controller.js'
 
 import { sendError } from './shared/http/response.utils.js'
+import { handleError } from './shared/errors/error-handler.js'
 
-export const router = (req: IncomingMessage, res: ServerResponse) => {
-	const url = new URL(
-		req.url ?? '/',
-		`http://${req.headers.host ?? 'localhost'}`,
-	)
-	const pathParts = url.pathname.split('/').filter(Boolean)
-	const isUserByIdRoute = pathParts.length === 2 && pathParts[0] === 'users'
+export const router = async (req: IncomingMessage, res: ServerResponse) => {
+	try {
+		const url = new URL(
+			req.url ?? '/',
+			`http://${req.headers.host ?? 'localhost'}`,
+		)
+		const pathParts = url.pathname.split('/').filter(Boolean)
+		const isUserByIdRoute = pathParts.length === 2 && pathParts[0] === 'users'
 
-	if (req.method === 'GET' && url.pathname === '/users') {
-		getUsersController(req, res)
-		return
+		if (req.method === 'GET' && url.pathname === '/users') {
+			getUsersController(req, res)
+			return
+		}
+
+		if (req.method === 'GET' && isUserByIdRoute) {
+			getUserByIdController(req, res)
+			return
+		}
+
+		if (req.method === 'POST' && url.pathname === '/users') {
+			await createUserController(req, res)
+			return
+		}
+
+		if (req.method === 'PATCH' && isUserByIdRoute) {
+			await updateUserController(req, res)
+			return
+		}
+
+		if (req.method === 'DELETE' && isUserByIdRoute) {
+			deleteUserController(req, res)
+			return
+		}
+		sendError(res, 404, 'Not Found')
+	} catch (error) {
+		handleError(error, res)
 	}
-
-	if (req.method === 'GET' && isUserByIdRoute) {
-		getUserByIdController(req, res)
-		return
-	}
-
-	if (req.method === 'POST' && url.pathname === '/users') {
-		createUserController(req, res)
-		return
-	}
-
-	if (req.method === 'PATCH' && isUserByIdRoute) {
-		updateUserController(req, res)
-		return
-	}
-
-	if (req.method === 'DELETE' && isUserByIdRoute) {
-		deleteUserController(req, res)
-		return
-	}
-
-	sendError(res, 404, 'Not Found')
 }

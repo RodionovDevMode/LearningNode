@@ -13,6 +13,7 @@ import {
 } from './validation/user.validation.js'
 import { parseGetUsersQuery } from './validation/user.query.js'
 import { sendError, sendJson } from '../shared/http/response.utils.js'
+import { HttpError } from '../shared/errors/http-error.js'
 
 export const getUsersController = (
 	req: IncomingMessage,
@@ -55,25 +56,25 @@ export const createUserController = async (
 	req: IncomingMessage,
 	res: ServerResponse,
 ) => {
+	throw new Error('Test unexpected error')
+	const body = await readRequestBody(req)
+
+	let data: unknown
+
 	try {
-		const body = await readRequestBody(req)
-		const data: unknown = JSON.parse(body)
-
-		if (!isCreateUserData(data)) {
-			sendError(res, 400, 'Invalid user data')
-			return
-		}
-		const newUser = createUser(data)
-
-		sendJson(res, 201, newUser)
-	} catch (error) {
-		if (error instanceof SyntaxError) {
-			sendError(res, 400, 'Invalid JSON')
-			return
-		}
-		console.error(error)
-		sendError(res, 500, 'Internal Server Error')
+		data = JSON.parse(body)
+	} catch {
+		throw new HttpError(400, 'Invalid JSON')
 	}
+
+	if (!isCreateUserData(data)) {
+		sendError(res, 400, 'Invalid user data')
+		return
+	}
+
+	const newUser = createUser(data)
+
+	sendJson(res, 201, newUser)
 }
 
 export const updateUserController = async (
@@ -88,33 +89,29 @@ export const updateUserController = async (
 		return
 	}
 
+	const body = await readRequestBody(req)
+
+	let data: unknown
+
 	try {
-		const body = await readRequestBody(req)
-		const data: unknown = JSON.parse(body)
-
-		if (!isUpdateUserData(data)) {
-			sendError(res, 400, 'Invalid user data')
-			return
-		}
-
-		const updatedUser = updateUser(id, data)
-
-		if (!updatedUser) {
-			sendError(res, 404, 'User not found')
-			return
-		}
-
-		sendJson(res, 200, updatedUser)
-	} catch (error) {
-		if (error instanceof SyntaxError) {
-			sendError(res, 400, 'Invalid JSON')
-			return
-		}
-
-		console.error(error)
-		sendError(res, 500, 'Internal Server Error')
+		data = JSON.parse(body)
+	} catch {
+		throw new HttpError(400, 'Invalid JSON')
 	}
-	return
+
+	if (!isUpdateUserData(data)) {
+		sendError(res, 400, 'Invalid user data')
+		return
+	}
+
+	const updatedUser = updateUser(id, data)
+
+	if (!updatedUser) {
+		sendError(res, 404, 'User not found')
+		return
+	}
+
+	sendJson(res, 200, updatedUser)
 }
 
 export const deleteUserController = (
