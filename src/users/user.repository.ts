@@ -1,9 +1,82 @@
 import { db } from '../database/db.js'
 import type { User, CreateUserData, UpdateUserData } from './user.types.js'
+import type { GetUsersParams } from './user.types.js'
 
-export const getUsersFromDb = async (): Promise<User[]> => {
-	const result = await db.query<User>('SELECT * FROM users ORDER BY id')
-	return result.rows
+export const getUsersFromDb = async ({
+	city,
+	search,
+	sort,
+	order,
+	page,
+	limit,
+}: GetUsersParams): Promise<{
+	users: User[]
+	total: number
+}> => {
+	const conditions: string[] = []
+	const filterValues: unknown[] = []
+
+	if (city) {
+		filterValues.push(city)
+		conditions.push(`city = $${filterValues.length}`)
+	}
+
+	if (search) {
+		filterValues.push(`%${search.trim()}%`)
+		conditions.push(`name ILIKE $${filterValues.length}`)
+	}
+
+	const whereClause =
+		conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+	let orderByClause = 'ORDER BY id ASC'
+
+	if (sort === 'name') {
+		orderByClause =
+			order === 'desc' ? 'ORDER BY name DESC' : 'ORDER BY name ASC'
+	}
+
+	if (sort === 'age') {
+		orderByClause = order === 'desc' ? 'ORDER BY age DESC' : 'ORDER BY age ASC'
+	}
+
+	const countResult = await db.query<{ total: number }>(
+		`
+			SELECT COUNT(*)::int AS total
+			FROM users
+			${whereClause}
+		`,
+		filterValues,
+	)
+
+	const total = countResult.rows[0]?.total ?? 0
+
+	const offset = (page - 1) * limit
+
+	const queryValues = [...filterValues]
+
+	queryValues.push(limit)
+	const limitParam = `$${queryValues.length}`
+
+	queryValues.push(offset)
+	const offsetParam = `$${queryValues.length}`
+
+	const usersResult = await db.query<User>(
+		`
+			SELECT *
+			FROM users
+			${whereClause}
+			${orderByClause}
+			LIMIT ${limitParam}
+			OFFSET ${offsetParam}
+		`,
+		queryValues,
+	)
+
+	return {
+		users: usersResult.rows,
+		total,
+	}
 }
 
 export const getUserByIdFromDb = async (

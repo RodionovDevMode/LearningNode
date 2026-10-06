@@ -32,51 +32,17 @@ export const deleteUser = async (id: number): Promise<User | undefined> => {
 	return await deleteUserFromDb(id)
 }
 
-export const getUsers = async ({
-	city,
-	search,
-	sort,
-	order,
-	page,
-	limit,
-}: GetUsersParams): Promise<GetUsersResult> => {
-	const dbUsers = await getUsersFromDb()
-	const filteredUsers = city
-		? dbUsers.filter(user => user.city === city)
-		: dbUsers
+export const getUsers = async (
+	params: GetUsersParams,
+): Promise<GetUsersResult> => {
+	const { page, limit } = params
 
-	const normalizedSearch = search === null ? null : search.trim().toLowerCase()
+	const { users, total } = await getUsersFromDb(params)
 
-	const searchedUsers = normalizedSearch
-		? filteredUsers.filter(user =>
-				user.name.toLowerCase().includes(normalizedSearch),
-			)
-		: filteredUsers
-
-	const sortedUsers = [...searchedUsers]
-
-	if (sort === 'name') {
-		sortedUsers.sort((a, b) => a.name.localeCompare(b.name))
-	}
-
-	if (sort === 'age') {
-		sortedUsers.sort((a, b) => a.age - b.age)
-	}
-
-	if (sort && order === 'desc') {
-		sortedUsers.reverse()
-	}
-
-	const total = searchedUsers.length
 	const totalPages = Math.ceil(total / limit)
 
-	const startIndex = (page - 1) * limit
-	const endIndex = startIndex + limit
-
-	const paginatedUsers = sortedUsers.slice(startIndex, endIndex)
-
 	return {
-		data: paginatedUsers,
+		data: users,
 		pagination: {
 			page,
 			limit,
