@@ -1,4 +1,4 @@
-# Learning Node.js
+ # Learning Node.js
 
 🇷🇺 [Русская версия](#ru) | 🇬🇧 [English version](#en)
 
@@ -10,32 +10,60 @@
 
 ## О проекте
 
-Этот репозиторий — мой учебный backend-проект на **Node.js + TypeScript**.
+Этот репозиторий — мой учебный backend-проект на **Node.js + TypeScript + PostgreSQL**.
 
-Моя основная специализация — frontend-разработка на React/TypeScript. Цель проекта — последовательно расширить знания в сторону backend и fullstack-разработки и разобраться не только в использовании готовых фреймворков, но и в том, как серверная часть приложения работает на более низком уровне.
+Моя основная специализация — frontend-разработка на React/TypeScript. Цель проекта — последовательно расширить знания в сторону backend и fullstack-разработки и разобраться не только в использовании готовых фреймворков, но и в том, как серверное приложение работает на более низком уровне.
 
-Поэтому первые этапы реализуются на чистом Node.js через `node:http`, без Express и NestJS.
+Поэтому первые этапы проекта реализуются на чистом Node.js через `node:http`, без Express и NestJS.
 
-Такой подход позволяет сначала разобраться с:
+Такой подход позволяет последовательно разобраться с:
 
-- HTTP
-- request / response lifecycle
+- HTTP request / response lifecycle
 - routing
 - streams
 - Promise / async-await
 - runtime validation
 - environment variables
-- filesystem
 - обработкой ошибок
-- разделением приложения на слои
+- архитектурными слоями
+- SQL
+- PostgreSQL
+- migrations
+- repository pattern
 
-а уже затем переходить к более высокоуровневым инструментам.
+а уже затем переходить к более высокоуровневым backend-инструментам.
 
 ---
 
 ## Текущий этап
 
-На текущем этапе реализован простой REST API для работы с пользователями.
+На текущем этапе реализован REST API для работы с пользователями с постоянным хранением данных в **PostgreSQL**.
+
+Полный CRUD больше не зависит от in-memory массива.
+
+Основной поток приложения:
+
+```text
+HTTP request
+    ↓
+Router
+    ↓
+Controller
+    ↓
+Service
+    ↓
+Repository
+    ↓
+PostgreSQL
+    ↓
+Repository
+    ↓
+Service
+    ↓
+Controller
+    ↓
+HTTP response
+```
 
 ### Endpoints
 
@@ -47,9 +75,16 @@ PATCH   /users/:id
 DELETE  /users/:id
 ```
 
-Данные пока хранятся в памяти приложения в обычном массиве.
+`GET /users` также поддерживает:
 
-Позже этот слой будет заменён PostgreSQL.
+- filtering
+- search
+- sorting
+- pagination
+
+На текущем этапе эти операции выполняются в Node.js после получения данных из PostgreSQL.
+
+Следующий шаг — постепенно перенести фильтрацию, поиск, сортировку и пагинацию на уровень SQL.
 
 ---
 
@@ -58,47 +93,275 @@ DELETE  /users/:id
 ### HTTP и REST
 
 - HTTP-сервер через `node:http`
+- собственный router
 - CRUD для пользователей
 - получение `id` из URL
+- работа с query parameters
 - HTTP status codes
-- обработка `400` и `404`
 - JSON parsing
-- request body через Node.js stream
+- request body через Node.js streams
+- обработка `400`, `404` и `500`
+- централизованная обработка ошибок
+- reusable helpers для JSON/error responses
 
-### Архитектура
+---
 
-HTTP-логика постепенно разделена на отдельные слои:
+## Архитектура
+
+Приложение разделено на отдельные слои:
 
 ```text
-HTTP request
-      ↓
-server / routing
-      ↓
-controller
-      ↓
-runtime validation
-      ↓
-service
-      ↓
-data
+Router
+  ↓
+Controller
+  ↓
+Service
+  ↓
+Repository
+  ↓
+PostgreSQL
 ```
 
-Контроллер отвечает за HTTP:
+### Router
+
+Определяет:
+
+- HTTP method
+- URL
+- нужный controller
+
+Router не содержит бизнес-логику и не работает напрямую с базой данных.
+
+### Controller
+
+Отвечает за HTTP-слой:
 
 - request / response
-- status codes
-- чтение body
+- чтение request body
 - JSON parsing
-- вызов validation
+- URL parameters
+- query parameters
+- runtime validation
+- HTTP status codes
 - вызов service
 
-Service layer содержит бизнес-логику и не зависит от HTTP.
+### Service
+
+Service layer отвечает за бизнес-логику приложения.
+
+Он:
+
+- не работает с HTTP напрямую
+- не содержит SQL
+- вызывает repository
+- возвращает данные controller-слою
+
+### Repository
+
+Repository отвечает за доступ к данным.
+
+Именно здесь находятся SQL-запросы:
+
+```text
+SELECT
+INSERT
+UPDATE
+DELETE
+```
+
+Repository знает о PostgreSQL, но ничего не знает о HTTP.
+
+### Database
+
+PostgreSQL является постоянным хранилищем данных.
+
+Данные больше не находятся в памяти процесса Node.js и сохраняются после перезапуска приложения.
+
+---
+
+## PostgreSQL
+
+Для работы с PostgreSQL используется пакет:
+
+```text
+pg
+```
+
+Подключение создаётся через:
+
+```ts
+Pool
+```
+
+Пример потока:
+
+```text
+Service
+   ↓
+Repository
+   ↓
+Pool
+   ↓
+PostgreSQL
+```
+
+---
+
+## SQL
+
+В проекте уже используются основные CRUD-команды SQL.
+
+### Получение списка пользователей
+
+```sql
+SELECT *
+FROM users
+ORDER BY id;
+```
+
+### Получение пользователя по ID
+
+```sql
+SELECT *
+FROM users
+WHERE id = $1;
+```
+
+### Создание пользователя
+
+```sql
+INSERT INTO users (name, age, email, city)
+VALUES ($1, $2, $3, $4)
+RETURNING *;
+```
+
+### Обновление пользователя
+
+Для частичного обновления используется `COALESCE`:
+
+```sql
+UPDATE users
+SET
+  name = COALESCE($1, name),
+  age = COALESCE($2, age),
+  email = COALESCE($3, email),
+  city = COALESCE($4, city)
+WHERE id = $5
+RETURNING *;
+```
+
+Это позволяет не изменять поля, которые отсутствуют в `PATCH` request.
+
+### Удаление пользователя
+
+```sql
+DELETE FROM users
+WHERE id = $1
+RETURNING *;
+```
+
+`RETURNING *` позволяет сразу получить созданную, обновлённую или удалённую строку.
+
+---
+
+## Parameterized SQL queries
+
+Пользовательские значения не вставляются напрямую в SQL-строку.
+
+Вместо:
+
+```ts
+`SELECT * FROM users WHERE id = ${id}`
+```
+
+используются параметры:
+
+```ts
+db.query(
+  'SELECT * FROM users WHERE id = $1',
+  [id],
+)
+```
+
+Принцип:
+
+```text
+SQL query
++
+parameters
+```
+
+Например:
+
+```text
+$1 → id
+```
+
+Такой подход отделяет SQL-код от входных данных.
+
+---
+
+## Database migrations
+
+Структура базы данных хранится в SQL migrations.
+
+```text
+database/
+└── migrations/
+    ├── 001_create_users.sql
+    └── 002_users_id_identity.sql
+```
+
+### 001_create_users.sql
+
+Создаёт таблицу:
+
+```sql
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  age INTEGER NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  city TEXT NOT NULL
+);
+```
+
+### 002_users_id_identity.sql
+
+Добавляет автоматическую генерацию `id`:
+
+```sql
+ALTER TABLE users
+ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY;
+```
+
+После этого PostgreSQL самостоятельно создаёт новый `id` при `INSERT`.
+
+Также sequence синхронизируется с уже существующими записями.
+
+Важный принцип:
+
+```text
+migration file
+    ↓
+SQL instructions
+    ↓
+psql / migration runner
+    ↓
+PostgreSQL
+    ↓
+database schema changed
+```
+
+Файл миграции сам по себе не изменяет базу — SQL из него должен быть выполнен.
 
 ---
 
 ## Request body и streams
 
-Тело HTTP-запроса читается через stream:
+Тело HTTP-запроса поступает в Node.js как stream.
+
+Используются события:
 
 ```ts
 req.on('data', ...)
@@ -106,7 +369,7 @@ req.on('end', ...)
 req.on('error', ...)
 ```
 
-Низкоуровневая логика чтения body вынесена в отдельную функцию:
+Низкоуровневая логика чтения request body вынесена в отдельную функцию:
 
 ```ts
 readRequestBody(req)
@@ -116,17 +379,17 @@ readRequestBody(req)
 
 ```text
 request stream
-      ↓
-data chunks
-      ↓
+    ↓
+chunks
+    ↓
 end
-      ↓
+    ↓
 Promise<string>
-      ↓
+    ↓
 await
 ```
 
-Благодаря этому контроллер может работать с body более линейно:
+Благодаря этому controller может работать с body линейно:
 
 ```ts
 const body = await readRequestBody(req)
@@ -134,9 +397,45 @@ const body = await readRequestBody(req)
 
 ---
 
+## Асинхронность
+
+Работа с PostgreSQL является I/O-операцией.
+
+Поэтому асинхронность проходит через все слои приложения:
+
+```text
+Router
+  ↓ await
+Controller
+  ↓ await
+Service
+  ↓ await
+Repository
+  ↓ await
+PostgreSQL
+```
+
+Например:
+
+```text
+GET /users/:id
+    ↓
+getUserByIdController()
+    ↓
+getUserById()
+    ↓
+getUserByIdFromDb()
+    ↓
+db.query()
+```
+
+Repository возвращает `Promise`, поэтому вызывающие его слои также работают асинхронно.
+
+---
+
 ## Runtime validation
 
-Внешний JSON не приводится напрямую к TypeScript-типам.
+Внешний JSON не считается доверенным TypeScript-типом.
 
 Вместо:
 
@@ -150,7 +449,7 @@ const data: CreateUserData = JSON.parse(body)
 const data: unknown = JSON.parse(body)
 ```
 
-После этого данные проходят runtime validation.
+После этого выполняется runtime validation.
 
 Используются:
 
@@ -166,103 +465,199 @@ const data: unknown = JSON.parse(body)
 (data: unknown): data is CreateUserData
 ```
 
-Проверяются не только типы, но и значения:
+Проверяются не только TypeScript-типы, но и значения:
 
 - `name` — непустая строка
-- `age` — целое число в допустимом диапазоне
+- `age` — валидное целое число
 - `email` — базовая проверка формата
 - `city` — непустая строка
 
-Для `PATCH` учитываются optional-поля.
+Для `PATCH` поля optional.
 
-Переданное поле должно быть валидным, но передавать все поля одновременно не требуется.
+Поле можно не передавать, но если оно присутствует — значение должно пройти validation.
 
 ---
 
-## Environment variables
+## Query parameters
 
-Конфигурация сервера больше не должна быть полностью захардкожена в коде.
+`GET /users` поддерживает параметры для работы со списком пользователей.
 
-Порт читается через:
+Используются:
 
-```ts
-process.env.PORT
+```text
+city
+search
+sort
+order
+page
+limit
 ```
 
-с fallback:
+Общий поток:
 
-```ts
-3000
+```text
+URLSearchParams
+      ↓
+parseGetUsersQuery()
+      ↓
+validated GetUsersParams
+      ↓
+service
+      ↓
+filter / search / sort / pagination
 ```
 
-Пример запуска:
+На текущем этапе PostgreSQL возвращает пользователей, после чего обработка query parameters выполняется в Node.js.
 
-```bash
-PORT=4000 npx tsx src/server.ts
+Планируемое улучшение:
+
+```text
+Node.js filtering
+      ↓
+SQL WHERE / ORDER BY / LIMIT / OFFSET
 ```
 
-Также протестирована загрузка переменных из `.env`:
+---
 
-```bash
-npx tsx --env-file=.env src/server.ts
+## Pagination
+
+API возвращает не только данные, но и metadata:
+
+```json
+{
+  "data": [],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 4,
+    "totalPages": 1
+  }
+}
 ```
 
 Используются:
 
 ```text
-PORT
-NODE_ENV
+page
+limit
+total
+totalPages
 ```
 
-Принцип:
+На текущем этапе pagination выполняется в service layer через работу с массивом результатов PostgreSQL.
+
+Позже она будет перенесена в SQL через:
+
+```sql
+LIMIT
+OFFSET
+```
+
+---
+
+## Error handling
+
+В проекте реализована централизованная обработка ошибок.
+
+Используется собственный:
+
+```ts
+HttpError
+```
+
+Router оборачивает обработку request в `try/catch`:
 
 ```text
-environment
+request
+   ↓
+router
+   ↓
+controller
+   ↓
+service
+   ↓
+repository
+   ↓
+error
+   ↓
+handleError()
+   ↓
+HTTP response
+```
+
+Известные HTTP-ошибки возвращаются клиенту с соответствующим status code.
+
+Неизвестные внутренние ошибки:
+
+- логируются через `console.error`
+- возвращаются клиенту как `500 Internal server error`
+
+Внутренние детали PostgreSQL при этом не отправляются клиенту.
+
+---
+
+## Environment variables
+
+Конфигурация приложения вынесена из основной бизнес-логики.
+
+Используются environment variables для параметров приложения и PostgreSQL.
+
+Например:
+
+```text
+PORT
+DB_HOST
+DB_PORT
+DB_NAME
+DB_USER
+```
+
+Поток конфигурации:
+
+```text
+.env / environment
       ↓
 process.env
       ↓
-application configuration
+config/env.ts
+      ↓
+application
 ```
 
-Один и тот же код может запускаться с разной конфигурацией в:
+Для загрузки `.env` используется:
 
-- development
-- test
-- production
+```ts
+import 'dotenv/config'
+```
+
+Запуск development-сервера:
+
+```bash
+npm run dev
+```
 
 ---
 
 ## File System
 
-Для изучения Node.js File System API добавлен отдельный учебный сценарий.
-
-Используется:
+В рамках изучения Node.js также был разобран File System API:
 
 ```ts
 node:fs/promises
 ```
 
-Разобраны:
+Изучены:
 
-- `readFile()` — чтение файла
-- `writeFile()` — запись / перезапись
-- `appendFile()` — добавление данных
-- `mkdir()` — создание директории
-- `stat()` — metadata файла или директории
-- `unlink()` — удаление файла
-- `rm()` — удаление директории
-- `recursive: true` — работа с вложенной структурой
+- `readFile()`
+- `writeFile()`
+- `appendFile()`
+- `mkdir()`
+- `stat()`
+- `unlink()`
+- `rm()`
+- `recursive: true`
 
-Пример:
-
-```ts
-const message = await readFile(
-	'./src/data/message.txt',
-	'utf-8',
-)
-```
-
-Также разобрана системная ошибка:
+Также была разобрана системная ошибка:
 
 ```text
 ENOENT
@@ -272,29 +667,46 @@ ENOENT
 
 ---
 
-## Текущая структура проекта
+## Основная структура проекта
 
 ```text
+database/
+└── migrations/
+    ├── 001_create_users.sql
+    └── 002_users_id_identity.sql
+
 src/
+├── index.ts
 ├── server.ts
-├── fs-demo.ts
+├── router.ts
 │
-├── data/
-│   └── message.txt
+├── config/
+│   └── env.ts
+│
+├── database/
+│   └── db.ts
 │
 ├── shared/
+│   ├── errors/
+│   │   ├── error-handler.ts
+│   │   └── http-error.ts
+│   │
 │   └── http/
-│       └── request.utils.ts
+│       ├── request.utils.ts
+│       └── response.utils.ts
 │
 └── users/
+    ├── validation/
+    │   ├── user.query.ts
+    │   └── user.validation.ts
+    │
     ├── user.controller.ts
+    ├── user.repository.ts
     ├── user.service.ts
-    ├── user.types.ts
-    ├── user.validation.ts
-    └── user.data.ts
+    └── user.types.ts
 ```
 
-Структура постепенно развивается в сторону feature-based организации.
+Структура развивается в сторону feature-based архитектуры с разделением ответственности между слоями.
 
 ---
 
@@ -319,19 +731,21 @@ req.body
 
 Но к этому моменту уже будет понимание:
 
-- откуда body появляется
+- откуда появляется body
 - что такое stream
 - что такое chunk
-- когда завершается чтение запроса
-- почему операции являются асинхронными
+- почему чтение является асинхронным
+- когда request считается полностью прочитанным
 
-Та же идея применяется к:
+Тот же подход применяется к:
 
-- validation
 - routing
+- validation
 - error handling
-- dependency injection
+- configuration
 - database access
+- repository pattern
+- dependency injection
 - middleware
 
 ---
@@ -361,38 +775,42 @@ req.body
 - [ ] EventEmitter
 - [ ] Event Loop подробнее
 - [ ] timers
-- [ ] более системная обработка ошибок
+- [ ] углублённая работа с Node.js internals
 
 ---
 
 ## 2. REST API
 
-Уже реализовано:
+Реализовано:
 
 - [x] CRUD
+- [x] router
 - [x] controllers
 - [x] services
 - [x] runtime validation
 - [x] HTTP status codes
 - [x] request body parsing
+- [x] URL API
+- [x] query parameters
+- [x] pagination
+- [x] filtering
+- [x] search
+- [x] sorting
+- [x] centralized error handling
+- [x] reusable HTTP response helpers
 
 Следующие этапы:
 
-- [ ] улучшенный routing
-- [ ] URL API
-- [ ] query parameters
-- [ ] pagination
-- [ ] filtering
-- [ ] sorting
-- [ ] centralized error handling
 - [ ] reusable validation schemas
 - [ ] Zod
+- [ ] более универсальный routing
+- [ ] перенос filtering/search/sorting/pagination в SQL
 
 ---
 
 ## 3. Архитектура приложения
 
-Постепенно развить приложение до структуры:
+Реализовано:
 
 ```text
 Routes
@@ -406,39 +824,58 @@ Repositories
 Database
 ```
 
-Разобрать:
+Пройдено:
 
-- separation of concerns
-- dependency injection
-- configuration layer
-- reusable modules
-- application architecture
-- repository pattern
+- [x] separation of concerns
+- [x] configuration layer
+- [x] repository pattern
+- [x] feature-based структура
+- [x] централизованный error handling
+
+Следующие темы:
+
+- [ ] dependency injection
+- [ ] reusable modules
+- [ ] дальнейшее развитие application architecture
 
 ---
 
 ## 4. PostgreSQL и SQL
 
-Заменить массив пользователей настоящей базой данных.
+Реализовано:
 
-Изучить:
+- [x] PostgreSQL setup
+- [x] подключение через `pg`
+- [x] connection pool
+- [x] repository layer
+- [x] migration для таблицы `users`
+- [x] identity generation для `id`
+- [x] перенос CRUD из memory в PostgreSQL
+- [x] `SELECT`
+- [x] `INSERT`
+- [x] `UPDATE`
+- [x] `DELETE`
+- [x] `WHERE`
+- [x] `ORDER BY`
+- [x] primary key
+- [x] `UNIQUE`
+- [x] `NOT NULL`
+- [x] parameterized queries
+- [x] migrations
 
-- PostgreSQL
-- SQL
-- `SELECT`
-- `INSERT`
-- `UPDATE`
-- `DELETE`
-- `WHERE`
-- `JOIN`
-- `GROUP BY`
-- `ORDER BY`
-- indexes
-- primary keys
-- foreign keys
-- relations
-- transactions
-- migrations
+Следующие темы:
+
+- [ ] `LIMIT`
+- [ ] `OFFSET`
+- [ ] SQL filtering
+- [ ] SQL search
+- [ ] dynamic `ORDER BY`
+- [ ] `JOIN`
+- [ ] `GROUP BY`
+- [ ] indexes подробнее
+- [ ] foreign keys
+- [ ] relations
+- [ ] transactions
 
 ---
 
@@ -446,7 +883,7 @@ Database
 
 После понимания базовых механизмов Node.js перенести API на NestJS.
 
-Разобрать:
+Изучить:
 
 - modules
 - controllers
@@ -484,6 +921,7 @@ Database
 - unit tests
 - integration tests
 - API tests
+- database integration tests
 
 ---
 
@@ -536,13 +974,15 @@ Infrastructure
 Я хочу понимать:
 
 - как проектируется API
-- как сервер обрабатывает запросы
-- как работает асинхронность
+- как сервер обрабатывает HTTP-запросы
+- как работает asynchronous I/O
 - как устроена бизнес-логика
 - как приложение валидирует внешние данные
-- как backend работает с файловой системой
-- как приложение работает с базой данных
-- как устроена authentication / authorization
+- как backend взаимодействует с файловой системой
+- как backend работает с PostgreSQL
+- как проектируются SQL-запросы
+- как разделяются application layers
+- как работает authentication / authorization
 - как приложение тестируется
 - как оно собирается и запускается в production
 
@@ -556,34 +996,62 @@ Infrastructure
 
 ## About
 
-This repository is my backend learning project built with **Node.js + TypeScript**.
+This repository is my backend learning project built with **Node.js + TypeScript + PostgreSQL**.
 
 My main background is frontend development with React and TypeScript.
 
-The purpose of this project is to gradually expand my knowledge into backend and fullstack development and understand not only how backend frameworks are used, but also how server-side applications work internally.
+The goal of this project is to gradually expand my knowledge into backend and fullstack development and understand not only how backend frameworks are used, but also how server-side applications work internally.
 
 For this reason, the first stages are implemented using native Node.js with `node:http`, without Express or NestJS.
 
 This approach helps me understand:
 
-- HTTP
-- request / response lifecycle
+- HTTP request / response lifecycle
 - routing
 - streams
 - Promise / async-await
 - runtime validation
 - environment variables
-- filesystem
 - error handling
 - application layers
+- SQL
+- PostgreSQL
+- migrations
+- repository pattern
 
-before moving to higher-level frameworks.
+before moving to higher-level backend frameworks.
 
 ---
 
 ## Current stage
 
-The project currently contains a simple REST API for users.
+The project currently contains a REST API for users with persistent data storage in **PostgreSQL**.
+
+The CRUD implementation no longer depends on an in-memory array.
+
+Main application flow:
+
+```text
+HTTP request
+    ↓
+Router
+    ↓
+Controller
+    ↓
+Service
+    ↓
+Repository
+    ↓
+PostgreSQL
+    ↓
+Repository
+    ↓
+Service
+    ↓
+Controller
+    ↓
+HTTP response
+```
 
 ### Endpoints
 
@@ -595,9 +1063,16 @@ PATCH   /users/:id
 DELETE  /users/:id
 ```
 
-Data is currently stored in memory using a simple array.
+`GET /users` also supports:
 
-It will later be replaced with PostgreSQL.
+- filtering
+- search
+- sorting
+- pagination
+
+At the current stage these operations are performed in Node.js after loading users from PostgreSQL.
+
+The next step is moving filtering, searching, sorting, and pagination into SQL.
 
 ---
 
@@ -608,47 +1083,275 @@ It will later be replaced with PostgreSQL.
 Implemented:
 
 - HTTP server using `node:http`
-- users CRUD operations
+- custom router
+- user CRUD operations
 - URL parameter parsing
+- query parameters
 - HTTP status codes
-- `400` and `404` error handling
 - JSON parsing
-- request body reading through streams
+- request body reading through Node.js streams
+- `400`, `404`, and `500` error handling
+- centralized error handling
+- reusable JSON/error response helpers
 
-### Architecture
+---
 
-HTTP logic is gradually being separated into dedicated layers:
+## Architecture
+
+The application is separated into dedicated layers:
 
 ```text
-HTTP request
-      ↓
-server / routing
-      ↓
-controller
-      ↓
-runtime validation
-      ↓
-service
-      ↓
-data
+Router
+  ↓
+Controller
+  ↓
+Service
+  ↓
+Repository
+  ↓
+PostgreSQL
 ```
 
-Controllers are responsible for HTTP concerns:
+### Router
+
+Responsible for:
+
+- HTTP method
+- URL matching
+- controller selection
+
+The router does not contain business logic and does not access the database directly.
+
+### Controller
+
+Responsible for HTTP concerns:
 
 - request / response
-- status codes
 - request body
 - JSON parsing
-- validation
+- URL parameters
+- query parameters
+- runtime validation
+- HTTP status codes
 - service invocation
 
-The service layer contains business logic and does not depend on HTTP.
+### Service
+
+The service layer contains application business logic.
+
+It:
+
+- does not work directly with HTTP
+- does not contain SQL
+- invokes repositories
+- returns data to controllers
+
+### Repository
+
+The repository layer is responsible for data access.
+
+SQL queries live here:
+
+```text
+SELECT
+INSERT
+UPDATE
+DELETE
+```
+
+The repository knows about PostgreSQL but does not know anything about HTTP.
+
+### Database
+
+PostgreSQL is the persistent data storage layer.
+
+User data is no longer tied to the Node.js process memory and survives application restarts.
+
+---
+
+## PostgreSQL
+
+PostgreSQL access uses:
+
+```text
+pg
+```
+
+Connections are managed through:
+
+```ts
+Pool
+```
+
+Flow:
+
+```text
+Service
+   ↓
+Repository
+   ↓
+Pool
+   ↓
+PostgreSQL
+```
+
+---
+
+## SQL
+
+The project currently uses the main CRUD SQL commands.
+
+### Fetch users
+
+```sql
+SELECT *
+FROM users
+ORDER BY id;
+```
+
+### Fetch user by ID
+
+```sql
+SELECT *
+FROM users
+WHERE id = $1;
+```
+
+### Create user
+
+```sql
+INSERT INTO users (name, age, email, city)
+VALUES ($1, $2, $3, $4)
+RETURNING *;
+```
+
+### Update user
+
+Partial updates use `COALESCE`:
+
+```sql
+UPDATE users
+SET
+  name = COALESCE($1, name),
+  age = COALESCE($2, age),
+  email = COALESCE($3, email),
+  city = COALESCE($4, city)
+WHERE id = $5
+RETURNING *;
+```
+
+Fields omitted from a `PATCH` request keep their existing values.
+
+### Delete user
+
+```sql
+DELETE FROM users
+WHERE id = $1
+RETURNING *;
+```
+
+`RETURNING *` allows the API to immediately receive the inserted, updated, or deleted database row.
+
+---
+
+## Parameterized SQL queries
+
+External values are not interpolated directly into SQL strings.
+
+Instead of:
+
+```ts
+`SELECT * FROM users WHERE id = ${id}`
+```
+
+the project uses parameters:
+
+```ts
+db.query(
+  'SELECT * FROM users WHERE id = $1',
+  [id],
+)
+```
+
+Conceptually:
+
+```text
+SQL query
++
+parameters
+```
+
+For example:
+
+```text
+$1 → id
+```
+
+This keeps SQL code separate from external values.
+
+---
+
+## Database migrations
+
+Database schema changes are stored as SQL migrations.
+
+```text
+database/
+└── migrations/
+    ├── 001_create_users.sql
+    └── 002_users_id_identity.sql
+```
+
+### 001_create_users.sql
+
+Creates the users table:
+
+```sql
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  age INTEGER NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  city TEXT NOT NULL
+);
+```
+
+### 002_users_id_identity.sql
+
+Adds automatic ID generation:
+
+```sql
+ALTER TABLE users
+ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY;
+```
+
+PostgreSQL can therefore generate new IDs automatically during `INSERT`.
+
+The identity sequence is also synchronized with existing user IDs.
+
+Important concept:
+
+```text
+migration file
+    ↓
+SQL instructions
+    ↓
+psql / migration runner
+    ↓
+PostgreSQL
+    ↓
+database schema changed
+```
+
+A migration file does not modify the database until its SQL is executed.
 
 ---
 
 ## Request body and streams
 
-HTTP request bodies are read through Node.js streams:
+HTTP request bodies arrive in Node.js as streams.
+
+The project works with:
 
 ```ts
 req.on('data', ...)
@@ -656,23 +1359,23 @@ req.on('end', ...)
 req.on('error', ...)
 ```
 
-Low-level request body parsing was extracted into:
+Low-level body reading is extracted into:
 
 ```ts
 readRequestBody(req)
 ```
 
-The utility converts an event-based API into a Promise-based API:
+This converts the event-based API into a Promise-based API:
 
 ```text
 request stream
-      ↓
-data chunks
-      ↓
+    ↓
+chunks
+    ↓
 end
-      ↓
+    ↓
 Promise<string>
-      ↓
+    ↓
 await
 ```
 
@@ -680,6 +1383,40 @@ Controllers can therefore use:
 
 ```ts
 const body = await readRequestBody(req)
+```
+
+---
+
+## Asynchronous flow
+
+PostgreSQL access is an I/O operation.
+
+Because repository methods return Promises, asynchronous execution propagates through the application layers:
+
+```text
+Router
+  ↓ await
+Controller
+  ↓ await
+Service
+  ↓ await
+Repository
+  ↓ await
+PostgreSQL
+```
+
+Example:
+
+```text
+GET /users/:id
+    ↓
+getUserByIdController()
+    ↓
+getUserById()
+    ↓
+getUserByIdFromDb()
+    ↓
+db.query()
 ```
 
 ---
@@ -716,77 +1453,182 @@ Example:
 (data: unknown): data is CreateUserData
 ```
 
-Validation checks both field types and values:
+Validation checks both types and values:
 
 - `name` — non-empty string
-- `age` — integer within the allowed range
+- `age` — valid integer
 - `email` — basic format validation
 - `city` — non-empty string
 
-`PATCH` validation supports optional fields.
+`PATCH` supports optional fields.
 
 A field may be omitted, but if it is provided, it must be valid.
 
 ---
 
+## Query parameters
+
+`GET /users` supports:
+
+```text
+city
+search
+sort
+order
+page
+limit
+```
+
+Flow:
+
+```text
+URLSearchParams
+      ↓
+parseGetUsersQuery()
+      ↓
+validated GetUsersParams
+      ↓
+service
+      ↓
+filter / search / sort / pagination
+```
+
+At the current stage PostgreSQL returns the users and query processing is performed in Node.js.
+
+Planned improvement:
+
+```text
+Node.js processing
+      ↓
+SQL WHERE / ORDER BY / LIMIT / OFFSET
+```
+
+---
+
+## Pagination
+
+The API returns both data and pagination metadata:
+
+```json
+{
+  "data": [],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 4,
+    "totalPages": 1
+  }
+}
+```
+
+Current pagination fields:
+
+```text
+page
+limit
+total
+totalPages
+```
+
+Pagination is currently calculated in the service layer.
+
+It will later be moved into SQL using:
+
+```sql
+LIMIT
+OFFSET
+```
+
+---
+
+## Error handling
+
+The application has centralized error handling.
+
+A custom error class is used:
+
+```ts
+HttpError
+```
+
+The router wraps request processing in `try/catch`:
+
+```text
+request
+   ↓
+router
+   ↓
+controller
+   ↓
+service
+   ↓
+repository
+   ↓
+error
+   ↓
+handleError()
+   ↓
+HTTP response
+```
+
+Known HTTP errors are returned with their corresponding status codes.
+
+Unexpected internal errors:
+
+- are logged using `console.error`
+- return `500 Internal server error`
+
+Internal PostgreSQL error details are not exposed to the client.
+
+---
+
 ## Environment variables
 
-Server configuration is no longer fully hardcoded.
+Application configuration is separated from business logic.
 
-The port can be read from:
+Environment variables are used for the application and PostgreSQL configuration.
 
-```ts
-process.env.PORT
-```
-
-with a fallback:
-
-```ts
-3000
-```
-
-Example:
-
-```bash
-PORT=4000 npx tsx src/server.ts
-```
-
-Variables can also be loaded from `.env`:
-
-```bash
-npx tsx --env-file=.env src/server.ts
-```
-
-Currently practiced:
+Examples:
 
 ```text
 PORT
-NODE_ENV
+DB_HOST
+DB_PORT
+DB_NAME
+DB_USER
 ```
 
-The configuration flow is:
+Configuration flow:
 
 ```text
-environment
+.env / environment
       ↓
 process.env
       ↓
-application configuration
+config/env.ts
+      ↓
+application
 ```
 
-The same application code can therefore run with different configuration in:
+`.env` loading uses:
 
-- development
-- test
-- production
+```ts
+import 'dotenv/config'
+```
+
+Development server:
+
+```bash
+npm run dev
+```
 
 ---
 
 ## File System
 
-A separate learning scenario was added for the Node.js File System API.
+The Node.js File System API was also explored during the project.
 
-The project uses:
+Used module:
 
 ```ts
 node:fs/promises
@@ -794,23 +1636,14 @@ node:fs/promises
 
 Practiced operations:
 
-- `readFile()` — read file contents
-- `writeFile()` — write / overwrite files
-- `appendFile()` — append data
-- `mkdir()` — create directories
-- `stat()` — inspect file and directory metadata
-- `unlink()` — delete files
-- `rm()` — delete directories
-- `recursive: true` — recursive directory operations
-
-Example:
-
-```ts
-const message = await readFile(
-	'./src/data/message.txt',
-	'utf-8',
-)
-```
+- `readFile()`
+- `writeFile()`
+- `appendFile()`
+- `mkdir()`
+- `stat()`
+- `unlink()`
+- `rm()`
+- `recursive: true`
 
 The filesystem error:
 
@@ -818,33 +1651,50 @@ The filesystem error:
 ENOENT
 ```
 
-was also examined when accessing a missing file.
+was also examined when accessing missing files or paths.
 
 ---
 
-## Current project structure
+## Main project structure
 
 ```text
+database/
+└── migrations/
+    ├── 001_create_users.sql
+    └── 002_users_id_identity.sql
+
 src/
+├── index.ts
 ├── server.ts
-├── fs-demo.ts
+├── router.ts
 │
-├── data/
-│   └── message.txt
+├── config/
+│   └── env.ts
+│
+├── database/
+│   └── db.ts
 │
 ├── shared/
+│   ├── errors/
+│   │   ├── error-handler.ts
+│   │   └── http-error.ts
+│   │
 │   └── http/
-│       └── request.utils.ts
+│       ├── request.utils.ts
+│       └── response.utils.ts
 │
 └── users/
+    ├── validation/
+    │   ├── user.query.ts
+    │   └── user.validation.ts
+    │
     ├── user.controller.ts
+    ├── user.repository.ts
     ├── user.service.ts
-    ├── user.types.ts
-    ├── user.validation.ts
-    └── user.data.ts
+    └── user.types.ts
 ```
 
-The project is gradually moving toward a feature-based structure.
+The project is gradually evolving toward a feature-based architecture with clear separation of concerns.
 
 ---
 
@@ -852,9 +1702,9 @@ The project is gradually moving toward a feature-based structure.
 
 It would be possible to start directly with Express or NestJS.
 
-However, the goal of this project is to understand what these tools do internally.
+However, the purpose of this project is to understand what those tools do internally.
 
-For example, the request body is currently handled using:
+For example, request bodies are currently handled through:
 
 ```ts
 req.on('data', ...)
@@ -867,15 +1717,17 @@ A framework may later expose something as simple as:
 req.body
 ```
 
-but by that point the underlying mechanism will already be understood.
+but the underlying mechanism will already be understood.
 
-The same principle will be applied to:
+The same principle is applied to:
 
-- validation
 - routing
+- validation
 - error handling
-- dependency injection
+- configuration
 - database access
+- repository pattern
+- dependency injection
 - middleware
 
 ---
@@ -905,38 +1757,42 @@ Next:
 - [ ] EventEmitter
 - [ ] Event Loop in more detail
 - [ ] timers
-- [ ] structured error handling
+- [ ] deeper Node.js internals
 
 ---
 
 ## 2. REST API
 
-Already implemented:
+Completed:
 
 - [x] CRUD
+- [x] router
 - [x] controllers
 - [x] services
 - [x] runtime validation
 - [x] HTTP status codes
 - [x] request body parsing
+- [x] URL API
+- [x] query parameters
+- [x] pagination
+- [x] filtering
+- [x] search
+- [x] sorting
+- [x] centralized error handling
+- [x] reusable HTTP response helpers
 
 Next:
 
-- [ ] improved routing
-- [ ] URL API
-- [ ] query parameters
-- [ ] pagination
-- [ ] filtering
-- [ ] sorting
-- [ ] centralized error handling
 - [ ] reusable validation schemas
 - [ ] Zod
+- [ ] more reusable routing
+- [ ] move filtering/search/sorting/pagination into SQL
 
 ---
 
 ## 3. Application architecture
 
-Gradually evolve the project into:
+Implemented:
 
 ```text
 Routes
@@ -950,39 +1806,58 @@ Repositories
 Database
 ```
 
-Topics:
+Completed:
 
-- separation of concerns
-- dependency injection
-- configuration layer
-- reusable modules
-- application architecture
-- repository pattern
+- [x] separation of concerns
+- [x] configuration layer
+- [x] repository pattern
+- [x] feature-based structure
+- [x] centralized error handling
+
+Next:
+
+- [ ] dependency injection
+- [ ] reusable modules
+- [ ] further application architecture improvements
 
 ---
 
 ## 4. PostgreSQL and SQL
 
-Replace the in-memory users array with a real database.
+Completed:
 
-Topics:
+- [x] PostgreSQL setup
+- [x] `pg`
+- [x] connection pool
+- [x] repository layer
+- [x] users table migration
+- [x] identity ID generation
+- [x] CRUD migration from memory to PostgreSQL
+- [x] `SELECT`
+- [x] `INSERT`
+- [x] `UPDATE`
+- [x] `DELETE`
+- [x] `WHERE`
+- [x] `ORDER BY`
+- [x] primary key
+- [x] `UNIQUE`
+- [x] `NOT NULL`
+- [x] parameterized queries
+- [x] migrations
 
-- PostgreSQL
-- SQL
-- `SELECT`
-- `INSERT`
-- `UPDATE`
-- `DELETE`
-- `WHERE`
-- `JOIN`
-- `GROUP BY`
-- `ORDER BY`
-- indexes
-- primary keys
-- foreign keys
-- relations
-- transactions
-- migrations
+Next:
+
+- [ ] `LIMIT`
+- [ ] `OFFSET`
+- [ ] SQL filtering
+- [ ] SQL search
+- [ ] dynamic `ORDER BY`
+- [ ] `JOIN`
+- [ ] `GROUP BY`
+- [ ] indexes in more detail
+- [ ] foreign keys
+- [ ] relations
+- [ ] transactions
 
 ---
 
@@ -1028,12 +1903,13 @@ Add:
 - unit tests
 - integration tests
 - API tests
+- database integration tests
 
 ---
 
 ## 8. Docker
 
-Containerize the application:
+Containerize:
 
 ```text
 Node.js API
@@ -1080,12 +1956,14 @@ Infrastructure
 I want to understand:
 
 - how APIs are designed
-- how servers process requests
+- how servers process HTTP requests
 - how asynchronous I/O works
 - how business logic is structured
 - how external input is validated
 - how backend applications interact with the filesystem
-- how applications interact with databases
+- how backend applications work with PostgreSQL
+- how SQL queries are designed
+- how application layers are separated
 - how authentication and authorization work
 - how applications are tested
 - how they are built and deployed to production
