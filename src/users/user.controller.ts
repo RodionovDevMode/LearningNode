@@ -1,5 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { HttpError } from '../shared/errors/http-error.js'
 import { readRequestBody } from '../shared/http/request.utils.js'
+import { sendError, sendJson } from '../shared/http/response.utils.js'
 import {
 	createUser,
 	deleteUser,
@@ -7,13 +9,12 @@ import {
 	getUsers,
 	updateUser,
 } from './user.service.js'
+import type { User } from './user.types.js'
+import { parseGetUsersQuery } from './validation/user.query.js'
 import {
 	isCreateUserData,
 	isUpdateUserData,
 } from './validation/user.validation.js'
-import { parseGetUsersQuery } from './validation/user.query.js'
-import { sendError, sendJson } from '../shared/http/response.utils.js'
-import { HttpError } from '../shared/errors/http-error.js'
 
 export const getUsersController = async (
 	req: IncomingMessage,
@@ -31,7 +32,7 @@ export const getUsersController = async (
 	sendJson(res, 200, result)
 }
 
-export const getUserByIdController = (
+export const getUserByIdController = async (
 	req: IncomingMessage,
 	res: ServerResponse,
 ) => {
@@ -43,7 +44,7 @@ export const getUserByIdController = (
 		return
 	}
 
-	const user = getUserById(id)
+	const user = await getUserById(id)
 	if (!user) {
 		sendError(res, 404, 'User not found')
 		return
@@ -71,7 +72,7 @@ export const createUserController = async (
 		return
 	}
 
-	const newUser = createUser(data)
+	const newUser = await createUser(data)
 
 	sendJson(res, 201, newUser)
 }
@@ -79,7 +80,7 @@ export const createUserController = async (
 export const updateUserController = async (
 	req: IncomingMessage,
 	res: ServerResponse,
-) => {
+): Promise<User | undefined> => {
 	const url = new URL(req.url ?? '/', `http://${req.headers.host}`)
 	const id = Number(url.pathname.split('/')[2])
 
@@ -103,7 +104,7 @@ export const updateUserController = async (
 		return
 	}
 
-	const updatedUser = updateUser(id, data)
+	const updatedUser = await updateUser(id, data)
 
 	if (!updatedUser) {
 		sendError(res, 404, 'User not found')
@@ -113,7 +114,7 @@ export const updateUserController = async (
 	sendJson(res, 200, updatedUser)
 }
 
-export const deleteUserController = (
+export const deleteUserController = async (
 	req: IncomingMessage,
 	res: ServerResponse,
 ) => {
@@ -126,7 +127,7 @@ export const deleteUserController = (
 		return
 	}
 
-	const deleted = deleteUser(id)
+	const deleted = await deleteUser(id)
 
 	if (!deleted) {
 		sendError(res, 404, 'User not found')

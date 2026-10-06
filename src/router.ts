@@ -26,7 +26,7 @@ export const router = async (req: IncomingMessage, res: ServerResponse) => {
 		}
 
 		if (req.method === 'GET' && isUserByIdRoute) {
-			getUserByIdController(req, res)
+			await getUserByIdController(req, res)
 			return
 		}
 
@@ -41,7 +41,7 @@ export const router = async (req: IncomingMessage, res: ServerResponse) => {
 		}
 
 		if (req.method === 'DELETE' && isUserByIdRoute) {
-			deleteUserController(req, res)
+			await deleteUserController(req, res)
 			return
 		}
 		sendError(res, 404, 'Not Found')
