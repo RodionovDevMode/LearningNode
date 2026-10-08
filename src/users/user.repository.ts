@@ -33,11 +33,16 @@ export const getUsersFromDb = async ({
 
 	if (sort === 'name') {
 		orderByClause =
-			order === 'desc' ? 'ORDER BY name DESC' : 'ORDER BY name ASC'
+			order === 'desc'
+				? 'ORDER BY name DESC, id DESC'
+				: 'ORDER BY name ASC, id ASC'
 	}
 
 	if (sort === 'age') {
-		orderByClause = order === 'desc' ? 'ORDER BY age DESC' : 'ORDER BY age ASC'
+		orderByClause =
+			order === 'desc'
+				? 'ORDER BY age DESC, id DESC'
+				: 'ORDER BY age ASC, id ASC'
 	}
 
 	const countResult = await db.query<{ total: number }>(
