@@ -117,4 +117,8 @@ describe('isUpdateUserData', () => {
 		const result = isUpdateUserData(data)
 		expect(result).toBe(false)
 	})
+
+	it('should intentionally fail CI', () => {
+		expect(1).toBe(2)
+	})
 })
