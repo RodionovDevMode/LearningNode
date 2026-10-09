@@ -1,4 +1,4 @@
- # Learning Node.js
+# Learning Node.js
 
 🇷🇺 [Русская версия](#ru) | 🇬🇧 [English version](#en)
 
@@ -271,16 +271,13 @@ RETURNING *;
 Вместо:
 
 ```ts
-`SELECT * FROM users WHERE id = ${id}`
+;`SELECT * FROM users WHERE id = ${id}`
 ```
 
 используются параметры:
 
 ```ts
-db.query(
-  'SELECT * FROM users WHERE id = $1',
-  [id],
-)
+db.query('SELECT * FROM users WHERE id = $1', [id])
 ```
 
 Принцип:
@@ -525,13 +522,13 @@ API возвращает не только данные, но и metadata:
 
 ```json
 {
-  "data": [],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 4,
-    "totalPages": 1
-  }
+	"data": [],
+	"pagination": {
+		"page": 1,
+		"limit": 10,
+		"total": 4,
+		"totalPages": 1
+	}
 }
 ```
 
@@ -643,7 +640,7 @@ npm run dev
 В рамках изучения Node.js также был разобран File System API:
 
 ```ts
-node:fs/promises
+node: fs / promises
 ```
 
 Изучены:
@@ -1261,16 +1258,13 @@ External values are not interpolated directly into SQL strings.
 Instead of:
 
 ```ts
-`SELECT * FROM users WHERE id = ${id}`
+;`SELECT * FROM users WHERE id = ${id}`
 ```
 
 the project uses parameters:
 
 ```ts
-db.query(
-  'SELECT * FROM users WHERE id = $1',
-  [id],
-)
+db.query('SELECT * FROM users WHERE id = $1', [id])
 ```
 
 Conceptually:
@@ -1511,13 +1505,13 @@ The API returns both data and pagination metadata:
 
 ```json
 {
-  "data": [],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 4,
-    "totalPages": 1
-  }
+	"data": [],
+	"pagination": {
+		"page": 1,
+		"limit": 10,
+		"total": 4,
+		"totalPages": 1
+	}
 }
 ```
 
@@ -1631,7 +1625,7 @@ The Node.js File System API was also explored during the project.
 Used module:
 
 ```ts
-node:fs/promises
+node: fs / promises
 ```
 
 Practiced operations:
