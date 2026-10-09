@@ -121,4 +121,8 @@ describe('isUpdateUserData', () => {
 	it('should intentionally fail CI', () => {
 		expect(1).toBe(2)
 	})
+
+	it('should intentionally fail CI', () => {
+		expect(1).toBe(2)
+	})
 })
