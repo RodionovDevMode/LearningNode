@@ -1,5 +1,9 @@
 import type { CreateUserData, UpdateUserData } from '../user.types.js'
 
+const isValidEmail = (email: string): boolean => {
+	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+}
+
 export const isCreateUserData = (data: unknown): data is CreateUserData => {
 	if (typeof data !== 'object' || data === null) {
 		return false
@@ -15,10 +19,8 @@ export const isCreateUserData = (data: unknown): data is CreateUserData => {
 		user.age > 0 &&
 		user.age <= 100
 
-	const isValidEmail =
-		typeof user.email === 'string' &&
-		user.email.trim().length > 0 &&
-		user.email.includes('@')
+	const hasValidEmail =
+		typeof user.email === 'string' && isValidEmail(user.email)
 
 	const isValidCity =
 		typeof user.city === 'string' && user.city.trim().length > 0
@@ -33,7 +35,7 @@ export const isCreateUserData = (data: unknown): data is CreateUserData => {
 		hasAtLeastOneField &&
 		isValidName &&
 		isValidAge &&
-		isValidEmail &&
+		hasValidEmail &&
 		isValidCity
 	)
 }
@@ -56,11 +58,9 @@ export const isUpdateUserData = (data: unknown): data is UpdateUserData => {
 			user.age > 0 &&
 			user.age <= 100)
 
-	const isValidEmail =
+	const hasValidEmail =
 		user.email === undefined ||
-		(typeof user.email === 'string' &&
-			user.email.trim().length > 0 &&
-			user.email.includes('@'))
+		(typeof user.email === 'string' && isValidEmail(user.email))
 
 	const isValidCity =
 		user.city === undefined ||
@@ -76,7 +76,7 @@ export const isUpdateUserData = (data: unknown): data is UpdateUserData => {
 		hasAtLeastOneField &&
 		isValidName &&
 		isValidAge &&
-		isValidEmail &&
+		hasValidEmail &&
 		isValidCity
 	)
 }
