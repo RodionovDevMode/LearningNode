@@ -6,7 +6,8 @@
 	"scripts": {
 		"dev": "tsx watch src/index.ts",
 		"test": "vitest run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"test:db": "DB_NAME=learning_node_test vitest run --config vitest.db.config.ts"
 	},
 	"repository": {
 		"type": "git",
