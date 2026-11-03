@@ -54,6 +54,18 @@ jobs:
       - name: Run unit and HTTP tests
         run: npm test
 
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Frontend build
+        working-directory: frontend
+        run: npm run build
+
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update
