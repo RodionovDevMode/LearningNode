@@ -1,0 +1,168 @@
+/* Основной контейнер приложения */
+.app {
+	display: flex;
+	min-height: 100vh;
+	background: #f5f7fb;
+	color: #1e293b;
+}
+
+/* Боковое меню */
+.sidebar {
+	width: 240px;
+	flex-shrink: 0;
+	background: #111827;
+	color: #fff;
+	padding: 28px 20px;
+}
+
+.sidebar h2 {
+	font-size: 20px;
+	margin: 0 0 40px;
+}
+
+.sidebar nav {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.nav-item {
+	padding: 12px 16px;
+	border-radius: 8px;
+	color: #94a3b8;
+	text-decoration: none;
+	transition:
+		background 0.2s,
+		color 0.2s;
+}
+
+.nav-item:hover,
+.nav-item.active {
+	background: #1e293b;
+	color: #fff;
+}
+
+/* Основной контент */
+.main-content {
+	flex: 1;
+	min-width: 0;
+	padding: 40px;
+}
+
+.page-header {
+	margin-bottom: 28px;
+}
+
+.page-header h1 {
+	font-size: 28px;
+	margin: 0 0 8px;
+}
+
+.page-header p {
+	color: #64748b;
+	margin: 0;
+}
+
+/* Карточка */
+.card {
+	background: #fff;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	overflow: hidden;
+	box-shadow: 0 4px 16px rgb(15 23 42 / 4%);
+}
+
+.card-header {
+	padding: 22px 24px;
+	border-bottom: 1px solid #e2e8f0;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.card-header h3 {
+	margin: 0;
+	font-size: 18px;
+}
+
+/* Таблица */
+.table-wrapper {
+	overflow-x: auto;
+}
+
+.users-table {
+	width: 100%;
+	border-collapse: collapse;
+	text-align: left;
+}
+
+.users-table th {
+	padding: 16px 24px;
+	background: #f8fafc;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	color: #64748b;
+	letter-spacing: 0.5px;
+}
+
+.users-table td {
+	padding: 18px 24px;
+	border-top: 1px solid #f1f5f9;
+	font-size: 14px;
+}
+
+.users-table tbody tr:hover {
+	background: #f8fafc;
+}
+
+/* Бейдж */
+.badge {
+	display: inline-flex;
+	padding: 5px 10px;
+	border-radius: 20px;
+	background: #dcfce7;
+	color: #166534;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+/* Кнопка */
+.btn {
+	padding: 10px 16px;
+	border: none;
+	border-radius: 8px;
+	background: #2563eb;
+	color: #fff;
+	font-size: 14px;
+	cursor: pointer;
+	transition: background 0.2s;
+}
+
+.btn:hover {
+	background: #1d4ed8;
+}
+
+.btn:focus-visible {
+	outline: 3px solid #93c5fd;
+	outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+	.app {
+		flex-direction: column;
+	}
+
+	.sidebar {
+		width: auto;
+		padding: 20px;
+	}
+
+	.sidebar h2 {
+		margin-bottom: 16px;
+	}
+
+	.main-content {
+		padding: 20px;
+	}
+}
