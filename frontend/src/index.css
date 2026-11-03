@@ -1,0 +1,51 @@
+/* Глобальные переменные */
+:root {
+	font-family:
+		Inter,
+		system-ui,
+		-apple-system,
+		sans-serif;
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+
+	color: #1e293b;
+	background: #f5f7fb;
+}
+
+/* Единая модель расчёта размеров */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+/* Основные элементы */
+body {
+	margin: 0;
+	min-width: 320px;
+	min-height: 100vh;
+}
+
+#root {
+	width: 100%;
+	min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+p {
+	margin-top: 0;
+}
+
+button,
+input,
+select,
+textarea {
+	font: inherit;
+}
+
+a {
+	color: inherit;
+}
